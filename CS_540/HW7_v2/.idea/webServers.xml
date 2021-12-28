@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="WebServers">
+    <option name="servers">
+      <webServer id="b02a3396-c922-49c6-a3ed-076bf213e5d9" name="UW CSL Machine">
+        <fileTransfer rootFolder="/afs/cs.wisc.edu/u/c/o/coling" accessType="SFTP" host="coling@best-linux.cs.wisc.edu" port="22" sshConfigId="8efa9bb7-15bb-45be-82b1-c8b19e4d4591" sshConfig="coling@coling@best-linux.cs.wisc.edu:22 password">
+          <advancedOptions>
+            <advancedOptions dataProtectionLevel="Private" passiveMode="true" shareSSLContext="true" />
+          </advancedOptions>
+        </fileTransfer>
+      </webServer>
+    </option>
+  </component>
+</project>

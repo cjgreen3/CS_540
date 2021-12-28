@@ -1,0 +1,989 @@
+import os
+import math
+#import numpy
+print('Colin Green')
+#These first two functions require os operations and so are completed for you
+#Completed for you
+def load_training_data(vocab, directory):
+    """ Create the list of dictionaries """
+    top_level = os.listdir(directory)
+    dataset = []
+    for d in top_level:
+        if d[-1] == '/':
+            label = d[:-1]
+            subdir = d
+        else:
+            label = d
+            subdir = d+"/"
+        files = os.listdir(directory+subdir)
+        for f in files:
+            bow = create_bow(vocab, directory+subdir+f)
+            dataset.append({'label': label, 'bow': bow})
+            
+    return dataset
+
+
+#Completed for you
+def create_vocabulary(directory, cutoff):
+    """ Create a vocabulary from the training directory
+        return a sorted vocabulary list
+    """
+    top_level = os.listdir(directory)
+    vocab = {}
+    for d in top_level:
+        subdir = d if d[-1] == '/' else d+'/'
+        files = os.listdir(directory+subdir)
+        for f in files:
+            with open(directory+subdir+f,'r',encoding='utf-8') as doc:
+                for word in doc:
+                    word = word.strip()
+                    if not word in vocab and len(word) > 0:
+                        vocab[word] = 1
+                    elif len(word) > 0:
+                        vocab[word] += 1
+    return sorted([word for word in vocab if vocab[word] >= cutoff])
+
+
+
+#The rest of the functions need modifications ------------------------------
+#Needs modifications
+def create_bow(vocab, filepath):
+    """ Create a single dictionary for the data
+        Note: label may be None
+    """
+    bow = {}
+    # TODO: add your code here
+    file = open(filepath,'r', encoding='utf-8')
+    lines = file.readlines()
+  
+ 
+    
+    for line in lines:
+        line = line.strip()
+        
+        if line in vocab:
+            
+            if (line in bow): 
+                bow[line] += 1
+            else: 
+                bow[line] = 1
+        else:
+            
+            if None in bow:
+                bow[None] += 1
+            else:
+                bow[None] = 1
+       
+    return bow
+  
+
+#Needs modifications
+def prior(training_data, label_list):
+    """ return the prior probability of the label in the training set
+        => frequency of DOCUMENTS
+    """
+
+    smooth = 1 # smoothing factor
+    logprob = {}
+    # TODO: add your code here
+    #list = os.listdir()
+    #number_files = len(list)
+    #print(number_files)
+    
+    
+    for label in label_list:
+        count = 0
+
+        for title in training_data:
+            if title['label'] == label:
+                count +=1
+                    
+        count=1+count
+        num_files = len(training_data)
+        p_label = math.log(count) - math.log(len(label_list) + num_files)
+
+        logprob[label] = p_label
+
+    return logprob
+
+#Needs modifications
+def p_word_given_label(vocab, training_data, label):
+    """ return the class conditional probability of label over all words, with smoothing """
+
+    smooth = 1 # smoothing factor
+    word_prob = {}
+    # TODO: add your code here
+    #wc is total words
+    #count is total vocab words
+    
+    wc= 0        
+    count = {}
+    count = {word: 0 for word in vocab}
+    count[None] = 0
+    
+    for dic in training_data:
+        if dic['label'] == label:
+            for word, word_count in dic['bow'].items():
+                    wc += word_count
+                    count[word] += word_count 
+                    
+    
+    num_vocabs = len(vocab)
+    word_prob = {k: math.log(v + 1) - math.log(wc + num_vocabs + 1) for k, v in count.items()}
+   
+    return word_prob
+
+
+##################################################################################
+#Needs modifications
+def train(training_directory, cutoff):
+    """ return a dictionary formatted as follows:
+            {
+             'vocabulary': <the training set vocabulary>,
+             'log prior': <the output of prior()>,
+             'log p(w|y=2016)': <the output of p_word_given_label() for 2016>,
+             'log p(w|y=2020)': <the output of p_word_given_label() for 2020>
+            }
+    """
+    retval = {}
+    label_list = os.listdir(training_directory)
+    
+    # TODO: add your code here
+    vocab = create_vocabulary(training_directory, cutoff)
+    training_data = load_training_data(vocab, training_directory)
+    log_prior = prior(training_data, label_list)
+    
+    #count = {word: 0 for word in vocab}
+    retval = {'vocabulary': vocab, 'log prior': log_prior}
+    
+    for label in label_list:
+        retval['log p(w|y='+ label + ')'] = p_word_given_label(vocab, training_data, label)
+    
+    return retval
+
+#Needs modifications
+def classify(model, filepath):
+    """ return a dictionary formatted as follows:
+            {
+             'predicted y': <'2016' or '2020'>,
+             'log p(y=2016|x)': <log probability of 2016 label for the document>,
+             'log p(y=2020|x)': <log probability of 2020 label for the document>
+            }
+    """
+    retval = {}
+      # TODO: add your code here
+    prob_2016 = model['log prior']['2016']
+ 
+    prob_2020 = model['log prior']['2020']
+  
+
+    file = open(filepath,'r', encoding='utf-8')
+    lines = file.readlines()
+    for line in lines:
+        line = line.strip()
+        if line in model['vocabulary']:
+            prob_2016 += model['log p(w|y=2016)'][line]
+            prob_2020 += model['log p(w|y=2020)'][line]
+        else:
+            prob_2016 += model['log p(w|y=2016)'][None]
+            prob_2020 += model['log p(w|y=2020)'][None]
+            
+
+    retval['log p(y=2016|x)'] = prob_2016 
+    retval['log p(y=2020|x)'] = prob_2020
+    
+    if retval['log p(y=2016|x)'] > retval['log p(y=2020|x)']:
+        retval['predicted y'] = '2016'
+    else:
+        retval['predicted y'] = '2020'
+
+    return retval
+
+END OF HW2
+
+from scipy.linalg import eigh
+import scipy
+import numpy as np
+import matplotlib.pyplot as plt
+
+
+def load_and_center_dataset(filename):
+    # TODO: add your code here
+    x = np.load(filename)  
+    return x - np.mean(x, axis=0)
+
+
+def get_covariance(dataset):
+    # TODO: add your code here
+    return np.dot(np.transpose(dataset), dataset)/ (len(dataset)-1)
+
+def get_eig(S, m):
+    # TODO: add your code here
+    
+    Lamda, U = scipy.linalg.eigh(S,eigvals=(len(S)-m,len(S)-1))
+
+    idx = Lamda.argsort()[::-1]
+    Lamda = Lamda[idx]
+    U = U[:,idx]
+    U = U[::-1]
+    U = np.flip(U,0)
+  
+    Lamda = np.diag(Lamda)
+
+    return Lamda, U
+
+def get_eig_perc(S, perc):
+    # TODO: add your code here
+    Lamda, U = scipy.linalg.eigh(S)
+    sums = np.sum(Lamda)
+    m = 0
+    for i in Lamda:
+        if(i/sums)>perc:
+            m +=1
+    Lamda, U = get_eig(S,m)        
+
+
+    return Lamda, U
+
+
+def project_image(img, U):
+    # TODO: add your code here
+    alpha = np.dot(img,U) 
+    return np.dot(U,alpha)
+   
+
+
+def display_image(orig, proj):
+    # TODO: add your code here
+    origb = orig.reshape([32, 32],order='F')
+    projb = proj.reshape([32, 32],order='F')
+    
+#     fig, (ax1, ax2) = plt.subplots(1,2)
+    fig, (ax1, ax2) = plt.subplots(figsize=(9,3), ncols=2)
+
+    origplot = ax1.imshow(origb,aspect='equal')
+    fig.colorbar(origplot,ax=ax1)
+
+    ax1.set_title('Original')
+
+   
+    
+    projplot = ax2.imshow(projb,aspect='equal')
+    fig.colorbar(projplot,ax=ax2)
+
+
+    ax2.set_title('Projection')
+    
+
+    plt.show()
+                          
+    
+    
+END OF HW3
+
+import numpy as np
+import math
+from numpy import inf
+import csv
+import random
+import matplotlib.pyplot as plt
+
+
+
+def load_data(filepath):
+    l = []
+    with open(filepath, newline='') as csvfile:
+        reader = csv.DictReader(csvfile)
+        i = 0
+        for row in reader:
+#           for row in reader:
+            r_dic = {}
+            if(i==20):
+                break
+            for k,v in row.items():
+                if((k == 'Name') or (k =='Type 1')or(k == 'Type 2')):
+                    r_dic[k] = v
+                elif((k == 'Generation') or (k == 'Legendary')):
+                    pass  
+                else:
+                    r_dic[k] = int(v)
+                    
+            l.append(r_dic)
+            i += 1
+    return l
+def calculate_x_y(stats):
+    x = stats['Attack'] + stats['Sp. Atk'] + stats['Speed']
+    y = stats['Defense'] + stats['Sp. Def'] + stats['HP']
+    tup = (x,y)
+    
+    return tup
+
+def find_distance(tup1, tup2):
+    return pow(((tup1[0]-tup2[0])**2+(tup1[1]-tup2[1])**2),0.5)
+
+
+def create_dist_list(dataset):
+    distance_list=[]
+    sorted_by_second=[]
+    for i in range(0,len(dataset)):    
+        for j in range(i+1, len(dataset)):
+
+                temp_dis = find_distance(dataset[i], dataset[j])
+                distance_list.append([i,j,temp_dis,2,i,j])
+ 
+    # sorted_by_second = sorted(distance_list, key=lambda tup: tup[2])
+    sorted_by_second = sorted(distance_list, key=lambda tup: (tup[2],tup[0],tup[1]))
+   
+    return sorted_by_second
+
+def create_Z_matrix(distance_list,dataset):
+#     Z = np.zeros((len(dataset) - 1, 4))
+    index_lines = []
+    
+    Z = ([])
+    removal_count=0
+    
+    for i in range(0,len(distance_list)):
+       
+        if((distance_list[i][0] == distance_list[i][1])or not math.isfinite(distance_list[i][2])):
+            removal_count =removal_count+1
+        if((distance_list[i][0] != distance_list[i][1])and math.isfinite(distance_list[i][2])):
+            if distance_list[i][0] >= len(dataset) and distance_list[i][1] >= len(dataset):
+                distance_list[i][3] = Z[distance_list[i][0] - len(dataset)][3] + Z[distance_list[i][1] - len(dataset)][3]
+            elif distance_list[i][0] >= len(dataset):
+                distance_list[i][3] = Z[distance_list[i][0] - len(dataset)][3] + 1
+            elif distance_list[i][1] >= len(dataset):
+                distance_list[i][3] = Z[distance_list[i][1] - len(dataset)][3] + 1
+            else:
+                distance_list[i][3] = 2
+            Z.append([distance_list[i][0],distance_list[i][1],distance_list[i][2],distance_list[i][3]])  
+            index_lines.append([distance_list[i][4], distance_list[i][5]])
+
+            for j in range(i+1,len(distance_list)):
+                
+
+                if(distance_list[j][0] == distance_list[i][0]):
+                   
+                    distance_list[j][0] = i + len(dataset)-removal_count
+                   
+                    if(distance_list[i][0] > len(dataset) and distance_list[i][1] > len(dataset)):
+                        distance_list[j][3] = distance_list[i][3] + distance_list[j][3]
+                        if(distance_list[i][0] != distance_list[i][1]):
+                            distance_list[j][3] = distance_list[i][3] + distance_list[j][3]
+                    else:
+                        distance_list[j][3] = distance_list[i][3] + 1
+
+                   
+                   
+            for j in range(i+1,len(distance_list)):
+                if(distance_list[j][1] == distance_list[i][1]):
+                   
+                    distance_list[j][1] = i + len(dataset) -removal_count
+                    if(distance_list[i][0] > len(dataset) and distance_list[i][1] > len(dataset)):
+                        distance_list[j][3] = distance_list[i][3] + distance_list[j][3]
+                        if(distance_list[i][0] != distance_list[i][1]):
+        
+                            distance_list[j][3] = distance_list[i][3] + distance_list[j][3]
+
+                    else:
+                        distance_list[j][3] = distance_list[i][3] + 1
+
+                   
+               
+                   
+            for j in range(i+1,len(distance_list)):
+                if(distance_list[j][0] == distance_list[i][1]):
+                    distance_list[j][0] = i + len(dataset)-removal_count
+                    if(distance_list[i][0] > len(dataset) and distance_list[i][1] > len(dataset)):
+                        distance_list[j][3] = distance_list[i][3] + distance_list[j][3]
+                        
+                        if(distance_list[i][0] == distance_list[i][1]):
+                            distance_list[j][3] = distance_list[i][3] + distance_list[j][3]
+                    else:
+                        distance_list[j][3] = distance_list[i][3] + 1
+
+                   
+                 
+                       
+            for j in range(i+1,len(distance_list)):
+                if(distance_list[j][1] == distance_list[i][0]):
+                    distance_list[j][1] = i + len(dataset)-removal_count
+                    if(distance_list[i][0] > len(dataset) and distance_list[i][1] > len(dataset)):
+                        distance_list[j][3] = distance_list[i][3] + distance_list[j][3]
+                        
+                        if(distance_list[i][0] != distance_list[i][1]):
+                            distance_list[j][3] = distance_list[i][3] + distance_list[j][3]
+
+                    else:
+                        distance_list[j][3] = distance_list[i][3] + 1
+
+            distance_list = sorted(distance_list, key=lambda tup: (tup[2],tup[0],tup[1]))
+    for k in range(0,len(Z)):
+        if Z[k][1]<Z[k][0]:
+            temp2 = Z[k][1]
+            Z[k][1] = Z[k][0]
+            Z[k][0] = temp2
+            
+    return Z, index_lines
+       
+def hac(dataset):
+    # for l in dataset:
+    #     if(not(isinstance(l[0],int))):
+    #         dataset.remove(l)
+    #     elif(not (isinstance(l[1],int))):
+    #         dataset.remove(l)
+    for l in dataset:
+        if(math.isnan(l[0])or math.isinf(l[0])):
+            dataset.remove(l)
+        elif(math.isnan(l[1])or math.isinf(l[1])):
+            dataset.remove(l)
+
+    return_list = []
+    distance_list = []
+    cluster_number = len(dataset)
+
+    distance_list = create_dist_list(dataset)
+   
+    Z,index_lines = create_Z_matrix(distance_list,dataset)
+
+    returned_matrix = np.array(Z)
+    
+    return returned_matrix
+
+def random_x_y(m):
+        return_val = []
+        for n in range(m):
+            x = random.randint(1,359)
+            y = random.randint(1,359)
+            tup = (x,y)
+            return_val.append(tup)
+        # return_val=[(random.randint(1,359),random.randint(1,359)) for i in in range(m)]
+
+        return return_val
+    
+def imshow_hac(dataset):
+#     Z = main()
+    for l in dataset:
+        if(not(isinstance(l[0],int))):
+            dataset.remove(l)
+        elif(not (isinstance(l[1],int))):
+            dataset.remove(l)
+
+    return_list = []
+    distance_list = []
+    cluster_number = len(dataset)
+
+    distance_list = create_dist_list(dataset)
+   
+    Z,index_lines = create_Z_matrix(distance_list,dataset)
+    fig = plt.figure(figsize=(25,10))
+    plt.axis([0,400,0,350])
+    for i in range(len(dataset)):
+        plt.scatter(dataset[i][0],dataset[i][1])
+    for index in index_lines:
+
+        x = [dataset[index[0]][0],dataset[index[1]][0]]
+        y = [dataset[index[0]][1],dataset[index[1]][1]]
+        plt.plot(x,y)
+        plt.pause(0.1)
+
+    plt.pause(0.5)
+    plt.show()
+
+# if __name__=="__main__":
+#     data = load_data('pokemon.csv')
+#     mt = []
+#     for d in data:
+#         (x,y) = calculate_x_y(d)
+#         mt.append([x,y])
+#     hac(mt)
+#     imshow_hac(mt)
+# def test():
+#     data = load_data('pokemon.csv')
+#     mt = []
+#     for d in data:
+#         (x,y) = calculate_x_y(d)
+#         mt.append([x,y])
+#     print(linkage(np.array(mt)))
+    
+END OF HW4
+
+
+import numpy as np
+from matplotlib import pyplot as plt
+from csv import reader
+import math
+
+from numpy.lib import DataSource
+
+
+# Feel free to import other packages, if needed.
+# As long as they are supported by CSL machines.
+
+
+def get_dataset(filename):
+    """
+    TODO: implement this function.
+
+    INPUT: 
+        filename - a string representing the path to the csv file.
+
+    RETURNS:
+        An n by m+1 array, where n is # data points and m is # features.
+        The labels y should be in the first column.
+    """
+    dataset = []
+    
+
+    file = open(filename)
+    with open(filename,'r') as read_obj:
+        csv_reader = reader(read_obj)
+        next(csv_reader)
+        for row in csv_reader:
+            row = row[1:len(row)]
+            temp = []
+            for i in row:
+                i = float(i)
+                temp.append(i)
+                
+            dataset.append(temp)
+
+    # data = dataset.to_numpy()
+    data = np.array(dataset)
+    return data
+ 
+
+
+def print_stats(dataset, col):
+    """
+    TODO: implement this function.
+
+    INPUT: 
+        dataset - the body fat n by m+1 array
+        col     - the index of feature to summarize on. 
+                  For example, 1 refers to density.
+
+
+    RETURNS:
+        None
+    """
+    print(len(dataset))
+
+    count = 0.0
+    sum = 0.0
+    sd = 0.0
+    dev = 0
+    n = len(dataset)
+    for i in range(n):
+        if (not (np.isnan(dataset[i][col]))):
+            count+= 1
+            sum = sum + dataset[i][col]
+    mean = sum/count
+
+   
+
+    for i in range(n):
+        if (not (np.isnan(dataset[i][col]))):
+            dev = (dataset[i][col]-mean)**2 + dev
+
+    temp = dev/(count-1)
+    sd = math.sqrt(temp)
+
+   
+    f_m = "{:.2f}".format(mean)
+    f_sd = "{:.2f}".format(sd)
+
+    
+    print(f_m)
+    print(f_sd)
+
+
+def regression(dataset, cols, betas):
+    """
+    TODO: implement this function.
+
+    INPUT: 
+        dataset - the body fat n by m+1 array
+        cols    - a list of feature indices to learn.
+                  For example, [1,8] refers to density and abdomen.
+        betas   - a list of elements chosen from [beta0, beta1, ..., betam]
+
+    RETURNS:
+        mse of the regression model
+    """
+    mse = 0.0
+    
+    error = []
+    SE = 0.0
+    sum = 0.0
+    for data in dataset:
+        fx = betas[0]
+        for c in range(len(cols)):
+            fx+=data[cols[c]]*betas[c+1]
+        fx = (fx - data[0])**2
+        sum += fx
+    mse = sum / len(dataset)
+
+    return mse
+
+
+def gradient_descent(dataset, cols, betas):
+    """
+    TODO: implement this function.
+
+    INPUT: 
+        dataset - the body fat n by m+1 array
+        cols    - a list of feature indices to learn.
+                  For example, [1,8] refers to density and abdomen.
+        betas   - a list of elements chosen from [beta0, beta1, ..., betam]
+
+    RETURNS:
+        An 1D array of gradients
+    """
+    grads = []
+
+    counter = 0
+   
+
+   
+    z = []
+    z = np.array(z)
+    X = np.array(dataset)
+    Y = np.array(dataset)
+    z = np.ones((len(dataset), 1))
+    
+    arr = np.hstack((z,X[:,cols]))
+    arr2 = Y[:,0]
+
+    return_val = np.sum((arr @ betas - arr2).reshape((-1, 1)) * arr,axis = 0)
+    return_val = (return_val* 2) / len(dataset)
+
+    return return_val
+
+
+def iterate_gradient(dataset, cols, betas, T, eta):
+    """
+    TODO: implement this function.
+
+    INPUT: 
+        dataset - the body fat n by m+1 array
+        cols    - a list of feature indices to learn.
+                  For example, [1,8] refers to density and abdomen.
+        betas   - a list of elements chosen from [beta0, beta1, ..., betam]
+        T       - # iterations to run
+        eta     - learning rate
+
+    RETURNS:
+        None
+    """
+    t = 0
+    betaN =[]
+    mse = []
+    betaPrior = []
+    
+    grads = []
+   
+    for t in range(T):
+        grads = gradient_descent(dataset,cols,betas)
+
+        betas = betas -  eta*grads
+        mse = regression(dataset,cols,betas)
+
+        iter = str(t+1)
+  
+        print( iter + " " + "{:.2f}".format(mse), end = ' ')
+        for l in betas:
+            print("{:.2f}".format(l), end = ' ')
+        print()
+        
+  
+
+
+def compute_betas(dataset, cols):
+    """
+    TODO: implement this function.
+
+    INPUT: 
+        dataset - the body fat n by m+1 array
+        cols    - a list of feature indices to learn.
+                  For example, [1,8] refers to density and abdomen.
+
+    RETURNS:
+        A tuple containing corresponding mse and several learned betas
+    """
+    X = np.array(dataset)
+    Y = np.array(dataset)
+    betas = []
+    mse = None
+
+  
+    z = np.ones((len(dataset), 1))
+    arr = np.hstack((z,X[:,cols]))
+    
+    a = np.linalg.inv(np.transpose(arr) @ arr)
+    betas = a @  (arr.T) @ Y[:,0]
+    
+    mse = regression(dataset,cols,betas)
+
+    return (mse, *betas)
+
+
+def predict(dataset, cols, features):
+    """
+    TODO: implement this function.
+
+    INPUT: 
+        dataset - the body fat n by m+1 array
+        cols    - a list of feature indices to learn.
+                  For example, [1,8] refers to density and abdomen.
+        features- a list of observed values
+
+    RETURNS:
+        The predicted body fat percentage value
+    """
+    betas = []
+    F = np.array(features)
+    a = [1]
+    fx = np.concatenate((a,F),axis = None)
+    _,*betas = compute_betas(dataset,cols)
+    result = np.sum(fx @ betas)
+    
+    
+    return result
+
+
+def synthetic_datasets(betas, alphas, X, sigma):
+    """
+    TODO: implement this function.
+
+    Input:
+        betas  - parameters of the linear model
+        alphas - parameters of the quadratic model
+        X      - the input array (shape is guaranteed to be (n,1))
+        sigma  - standard deviation of noise
+
+    RETURNS:
+        Two datasets of shape (n,2) - linear one first, followed by quadratic.
+    """
+    ldataset = []
+    qdataset = []
+    a = [1]
+
+
+    
+    for r in X:
+        fx = np.concatenate((a,r), axis = None)
+        fx =  fx @ betas
+        z = np.random.normal(0, sigma,size=1)
+        fx = fx + z      
+        ldataset.append([fx[0], r[0]])
+
+    ldataset = np.array(ldataset)
+    
+    # Xs = np.square(X)
+
+    for r in X:
+        fx = (np.concatenate((a,r*r), axis = None))
+        fx =  fx @ alphas
+        z = np.random.normal(0, sigma,size=1)
+        fx = fx + z      
+        qdataset.append([fx[0], r[0]])
+
+    qdataset = np.array(qdataset)
+    
+
+    return ldataset, qdataset
+
+
+def plot_mse():
+    from sys import argv
+    if len(argv) == 2 and argv[1] == 'csl':
+        import matplotlib
+        matplotlib.use('Agg')
+
+    # TODO: Generate datasets and plot an MSE-sigma graph
+    X = np.random.randint(-100, 100, size=(1000,1))
+    sigmas=[10**-4, 10**-3, 10**-2, 10**-1,1,10, 10**2, 10**3, 10**4, 10**5]
+  
+    betas = np.array([1,2])
+    alphas= np.array([1,2])
+    msely = []
+    mseqy = []
+   
+    for s in sigmas:    
+        # *ldata,_=synthetic_datasets(betas, alphas, X, s)
+        # _,*qdata=synthetic_datasets(betas, alphas, X, s)
+        ldata,qdata=synthetic_datasets(betas, alphas, X, s)
+
+        msel=compute_betas(ldata, cols=[1])
+        msely.append(msel[0])
+        mseq=compute_betas(qdata, cols=[1])
+        mseqy.append(mseq[0])
+         
+    plt.plot(sigmas, msely, '-o', label="Linear")
+    plt.plot(sigmas, mseqy, '-o', label="Quadratic")   
+    # plt.title('MSE by Sigmas', size=18)
+    plt.ylabel('MSEs', size=10, labelpad=10)
+    plt.xlabel('SIGMAS', size=10, labelpad=10)
+
+    plt.yscale('log')
+    plt.xscale('log')
+
+    plt.legend()
+    plt.savefig('mse.pdf')
+
+
+if __name__ == '__main__':
+    ### DO NOT CHANGE THIS SECTION ###
+    plot_mse()
+# def test():
+#     filename = 'bodyfat.csv'
+#     dataset = get_dataset(filename)
+    # print(dataset)
+    # print(dataset.shape)
+    # print_stats(dataset, 1)
+    # print(regression(dataset,cols=[2,3], betas=[0,0,0]))
+    # print(regression(dataset,cols=[2,3,4], betas=[0,-1.1,-.2,3]))
+    # print(gradient_descent(dataset, cols=[2,3], betas=[0,0,0]))
+    #  iterate_gradient(dataset, cols=[1,8], betas=[400,-400,300], T=10, eta=1e-4)
+    # print(compute_betas(dataset, cols=[1,2]))
+    # print(predict(dataset, cols=[1,2], features=[1.0708, 23]))
+    # print(synthetic_datasets(np.array([0,2]), np.array([0,1]), np.array([[4]]), 1))
+
+# test()
+
+END OF HW5
+
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+import torch.optim as optim
+from torchvision import datasets, transforms
+
+def get_data_loader(training=True):
+    custom_transform= transforms.Compose([transforms.ToTensor(),transforms.Normalize((0.1307,), (0.3081,))])
+    train_set = datasets.MNIST('./data', train=True, download=True, transform=custom_transform)
+    test_set = datasets.MNIST('./data', train=False,transform=custom_transform)
+    if(training==False):
+        loader = torch.utils.data.DataLoader(test_set, batch_size = 50)
+        return loader
+    else:
+        loader = torch.utils.data.DataLoader(train_set, batch_size = 50)
+        return loader
+    
+def build_model():
+    input_size = 784
+    hidden_sizes = [128,64]
+    output_size = 10
+    model =  nn.Sequential(
+        nn.Flatten(), 
+        nn.Linear(input_size,hidden_sizes[0]),
+        nn.ReLU(),
+        nn.Linear(hidden_sizes[0], hidden_sizes[1]),
+        nn.ReLU(),
+        nn.Linear(hidden_sizes[1],output_size)
+        
+    )
+    return model
+
+def train_model(model, train_loader, criterion, T):
+    opt = optim.SGD(model.parameters(), lr=0.001, momentum=0.9)
+    model.train()
+    for e in range(T):
+        ans = 0
+        # for data in train_loader:
+        for batch_idx, (data, labels) in enumerate(train_loader):
+            
+            outputs = model(data)
+
+            opt.zero_grad()
+            loss = criterion(outputs, labels)
+            v = outputs.argmax(dim=1,keepdim=True)
+            ans += v.eq(labels.view_as(v)).sum().item()
+            loss.backward()
+            opt.step()
+            # running_loss += loss.item()
+
+            
+        print('Train Epoch: {} \t Accuracy: {}/{}({:.2f}%)\tLoss: {:.3f}'.format(
+
+                        e, ans, len(train_loader.dataset),
+
+                        100. * ans / len(train_loader.dataset), loss.item()))
+
+
+    return
+
+def evaluate_model(model, test_loader, criterion, show_loss=True):
+    model.train()
+    # correct = 0
+    # total = 0
+    avg_loss = 0.0
+    sum_loss = 0.0
+    with torch.no_grad():
+        ans = 0.0
+        for batch_idx, (data, labels) in enumerate(test_loader):
+            outputs = model(data)
+            loss = criterion(outputs, labels)
+            v = outputs.argmax(dim=1,keepdim=True)
+            ans += v.eq(labels.view_as(v)).sum().item()
+
+            sum_loss += loss.item()
+
+   
+    avg_loss = sum_loss / len(test_loader.dataset)
+
+    print('Accuracy: {:.2f}%'.format(100. * ans / len(test_loader.dataset)))
+    if(show_loss):
+        print('Loss: {:.4f}'.format(avg_loss))
+            
+    return
+
+def predict_label(model, test_images, index):
+    class_names = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine']
+
+    logits = model(test_images[index])
+    prob = F.softmax(logits,dim=1)
+    print(prob)
+    #sorting prob arg sort
+    t = torch.argsort(prob, descending=True)
+
+    torch.set_printoptions(precision=2)
+
+    print(t)
+
+    formatted_float0 = "{:.2f}".format(prob[0][t[0][0]].item())
+    formatted_float1 = "{:.2f}".format(prob[0][t[0][1]].item())
+    formatted_float2 = "{:.2f}".format(prob[0][t[0][2]].item())
+   
+    print('{}: {}%'.format(class_names[t[0][0]],formatted_float0))
+    print('{}: {}%'.format(class_names[t[0][1]],formatted_float1))
+    print('{}: {}%'.format(class_names[t[0][2]],formatted_float2))
+
+    return
+
+
+
+def test():
+    train_loader = get_data_loader()
+    # print(type(train_loader))
+    # print(train_loader.dataset)
+    # test_loader = get_data_loader(False)
+    model = build_model()
+    print(model)
+    # criterion = nn.CrossEntropyLoss()
+    # train_model(model, train_loader, criterion, T = 5)
+    # evaluate_model(model, test_loader, criterion, show_loss = True)
+    pred_set, _ = iter(train_loader).next()
+
+
+    predict_label(model, pred_set, 1)
+
+test()
+
+
+END OF HW6
+
+                          
+
+

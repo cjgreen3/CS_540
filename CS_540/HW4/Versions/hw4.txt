@@ -1,0 +1,217 @@
+# from scipy.linalg import eigh
+# import scipy
+# from scipy.spatial.distance import pdist, squareform
+import numpy as np
+import math
+from numpy import inf
+import csv
+import random 
+from scipy.cluster.hierarchy import dendrogram, linkage
+
+
+def load_data(filepath):
+    l = []
+    with open(filepath,'r', newline='') as csvfile:
+        reader = csv.DictReader(csvfile)
+   
+        for i,row in enumerate(reader):
+            if(i==20):
+                break
+            row['Total'] = int(row['Total'])
+            row['HP'] = int(row['HP'])
+            row['Attack'] = int(row['Attack'])
+            row['Defense'] = int(row['Defense'])
+            row['Sp. Atk'] = int(row['Sp. Atk'])
+            row['Sp. Def'] = int(row['Sp. Def'])
+            row['Speed'] = int(row['Speed'])
+            del row['Generation']
+            del row['Legendary']
+            l.append(row)
+    return l
+       
+def calculate_x_y(stats):
+    x = stats['Attack'] + stats['Sp. Atk'] + stats['Speed']
+    y = stats['Defense'] + stats['Sp. Def'] + stats['HP']
+    tup = (x,y)
+    return tup
+
+def find_distance(tup1, tup2):
+    return pow(((tup1[0]-tup2[0])**2+(tup1[1]-tup2[1])**2),0.5)
+
+def single_linkage(c1, c2):
+    #loop through the points in the cluster
+    min_dis = inf
+    old_ij = []
+    curr_dis = 0
+    return_val1 = (0,0) 
+    return_val2 = (0,0)
+    for i in range(len(c1)):
+        for j in range(len(c2)):
+#             print(i)
+#             print(j)
+            temp_dis = find_distance(c1[i], c2[j])
+            if(temp_dis < min_dis and temp_dis != 0 and temp_dis >= curr_dis):
+                        min_dis = temp_dis
+                        return_val1 = c1[i]
+                        return_val2 = c2[j]
+                        old_ij.append(i)
+                        old_ij.append(j)
+                        curr_dis = temp_dis
+
+     
+    return return_val1, return_val2, min_dis
+
+def find_next_merge(cluster_list, used_tup):
+    cX = []
+    cY = []
+    returned_list = []
+    temp_dis = inf
+    x = 0
+    y = 0
+    flag = True
+    for i in range(0,len(cluster_list)):
+        for j in range(i+1, len(cluster_list)):
+            
+            for m in cluster_list[i][1]:
+                if(m in used_tup):
+                    for n in cluster_list[j][1]:
+                        if(n in used_tup):
+                            flag = False
+            if(flag == True):               
+                c1, c2, min_dis = single_linkage(cluster_list[i][1], cluster_list[j][1])
+         
+           
+            if(temp_dis > min_dis):
+                temp_dis = min_dis
+                if(len(cX) !=0 and len(cY) != 0):
+                    cX.clear()
+                    cY.clear()
+                    cX.append(c1)
+                    cY.append(c2)
+                    x = i
+                    y = j
+                elif(len(cX) == 0 and len(cY) ==0):
+                    cX.append(c1)
+                    cY.append(c2)
+                    x = i
+                    y = j
+                
+    
+    returned_list.append(x)
+    returned_list.append(cX)
+    returned_list.append(y)
+    returned_list.append(cY)
+    returned_list.append(temp_dis)
+    print(returned_list)
+    return returned_list
+
+
+
+def hac(dataset):
+ #filter out empty values
+
+#   Looking for help with creating a list of clusters and all the points  
+#   that are in each cluster, this information is
+#   required to create an updated distance matrix.
+
+
+    cluster_list = []
+    return_list = []
+    distance_list = []
+    cluster_number = len(dataset)
+    
+#     returned_matrix = np.zeros((len(dataset) - 1, 4))
+    matrix = []
+    for x in range(len(dataset)):
+        cluster_list.append([x,[dataset[x]], 1])
+#     print(cluster_list)
+
+
+    for i in range(0,len(dataset)): 
+        d = ['' for k in range(i+1)]
+        for j in range(i+1,len(dataset)):
+            d.append(find_distance(dataset[i],dataset[j]))
+        distance_list.append(d) 
+
+    used_tup = []
+# loop until merging is complete: loop alpha
+# use  find_next_merge to get the next two cluster we want to merge next
+# reate a new cluster: c_new
+# remove the cx, cy from cluster list, we add c_new into cluster list
+# fill out the result [cx, cy, dis_cx_cy, len(cx) + len(cy)]
+    row = 0
+  
+    while(cluster_number > 1):
+        # CLUSTER LIST FORMAT: [[0, [(159, 159)], 1]
+        # RETURNED MATRIX FORMAT: [7,8,DIST,NUMPOINTS]
+        # RETURNED lIST FROM MERGE FORMAT:[INDEX1,CLUSTER1,INDEX2,CLUSTER2,DIST]  
+        r_list = []
+        returned_list = find_next_merge(cluster_list, used_tup)
+        
+#         print(returned_list[1], returned_list[3])
+        
+        for i in returned_list[1]:
+            r_list.append(i)
+        for j in returned_list[3]:
+            r_list.append(j)
+            
+        cluster_list.append([row +20,r_list, len(returned_list[1])+ len(returned_list[3])])
+        print(cluster_list)
+        used_tup.append(returned_list[1])
+        used_tup.append(returned_list[3])
+        
+      
+        cluster_number-=1
+        
+      
+    
+      
+        matrix.append( [returned_list[0],returned_list[2],returned_list[4],cluster_list[row+20][2]])
+        
+        
+        row+=1
+    final_matrix = np.array(matrix)
+    return final_matrix
+
+
+def random_x_y(m):
+        return_val = []
+        for n in range(1,m):
+            x = random.randint(1,360)
+            y = random.randint(1,360)
+            tup = (x,y)
+            return_val.append(tup)
+        return return_val
+# def imshow_hac(dataset): 
+#     Z = main(dataset)
+#     fig = plt.figure(figsize=(25,10))
+#     plt.scatter()
+#     plt.plot()
+#     plt.pause()
+def main():
+    data = load_data('pokemon.csv')
+    mt = []
+    for d in data:
+        (x,y) = calculate_x_y(d)
+        mt.append([x,y])
+    print(linkage(np.array(mt)))
+    
+# def merge_cluster(distance_list, cluster_list):
+# # return two indexes and of the cluster, add into returnedmatrix and update distances
+#     distance = inf
+#     temp_distance = inf
+#     index1 = inf
+#     index2 = inf
+    
+#     for i in range(0,len(cluster_list)):
+#         for j in range(i+1, len(cluster_list)):
+#             temp_distance = distance_list[i][j]
+#             if(temp_distance < distance):
+#                 distance = temp_distance
+#                 index1 = i
+#                 index2 = j
+#                 cluster_list.append()
+                              
+# #     print(distance)
+#     return (index1,index2,distance)
+    

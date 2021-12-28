@@ -1,0 +1,55 @@
+ychen878@wisc.edu
+
+# x1: (x, y)
+def distance(x1, x2):
+	# Euclidean distance
+
+#c1: [x1, x2, x3, … xn] 
+def single_linage(c1, c2):
+	# loop through points in c1, c2
+	return min_dis
+
+cluster: [c1, c2, c3, … cn]
+def find_next_merge(clusters):
+	# loop through all the clusters
+	# find out cx, cy that has the min single linage distance
+
+def hac():
+	# initialize the cluster list: an cluster: [cluster_index, [all the points in cluster], num of point in cluster]
+		before merging
+[0, [p_0], 1]
+..
+[19, [p_19], 1]
+
+c_0, c_1
+
+after merging 18 clusters
+		[3, [p_3], 1]
+..
+[19, [p_19], 1]
+[20, [p_0, p_1], 2]  p_0 (x,y)
+		[20, [0, 1], 2] 
+
+
+		c_x, c_y
+		c_x [index_c_x, [a,b,c], 3]
+		c_y [index_c_y, [d,e,f], 3]
+
+		distance between a and d -> access dis_mat[a][d]
+
+
+	# initially, cluster list contains 20 cluster, each contains 1 point index 0-19
+	loop until merging is complete: loop alpha
+		use  find_next_merge to get the next two cluster we want to merge next
+		create a new cluster: c_new
+		remove the cx, cy from cluster list, we add c_new into cluster list
+		fill out the result [cx, cy, dis_cx_cy, len(cx) + len(cy)]
+
+
+
+#         formed_cluster.append([distance_list[i][0],i+len(dataset)])    
+#         formed_cluster.append([distance_list[i][1],i+len(dataset)])
+        #         for i in range (0,len(formed_cluster)):
+#             if(distance_list[i][0] == formed_cluster([i][0])):            
+#                 Z.append([formed_list[i][1],distance_list[i][1],distance_list[i][2],distance_list[i][3]])
+#             else:

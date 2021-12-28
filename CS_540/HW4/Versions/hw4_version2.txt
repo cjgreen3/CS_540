@@ -1,0 +1,233 @@
+# from scipy.linalg import eigh
+# import scipy
+# from scipy.spatial.distance import pdist, squareform
+import numpy as np
+import math
+from numpy import inf
+import csv
+import random 
+import matplotlib.pyplot as plt
+
+from scipy.cluster.hierarchy import dendrogram, linkage
+
+
+def load_data(filepath):
+    l = []
+    with open(filepath,'r', newline='') as csvfile:
+        reader = csv.DictReader(csvfile)
+   
+        for i,row in enumerate(reader):
+            if(i==20):
+                break
+            row['Total'] = int(row['Total'])
+            row['HP'] = int(row['HP'])
+            row['Attack'] = int(row['Attack'])
+            row['Defense'] = int(row['Defense'])
+            row['Sp. Atk'] = int(row['Sp. Atk'])
+            row['Sp. Def'] = int(row['Sp. Def'])
+            row['Speed'] = int(row['Speed'])
+            del row['Generation']
+            del row['Legendary']
+            l.append(row)
+    return l
+       
+def calculate_x_y(stats):
+    x = stats['Attack'] + stats['Sp. Atk'] + stats['Speed']
+    y = stats['Defense'] + stats['Sp. Def'] + stats['HP']
+    tup = (x,y)
+    return tup
+
+def find_distance(tup1, tup2):
+    return pow(((tup1[0]-tup2[0])**2+(tup1[1]-tup2[1])**2),0.5)
+
+def single_linkage(c1, c2):
+    #loop through the points in the cluster
+    min_dis = inf
+    old_ij = []
+    curr_dis = 0
+    return_val1 = (0,0) 
+    return_val2 = (0,0)
+    for i in range(len(c1)):
+        for j in range(len(c2)):
+#             print(i)
+#             print(j)
+            temp_dis = find_distance(c1[i], c2[j])
+            if(temp_dis < min_dis and temp_dis != 0 and temp_dis >= curr_dis):
+                        min_dis = temp_dis
+                        return_val1 = c1[i]
+                        return_val2 = c2[j]
+                        old_ij.append(i)
+                        old_ij.append(j)
+                        curr_dis = temp_dis
+
+     
+    return return_val1, return_val2, min_dis
+
+def find_next_merge(cluster_list, used_tup):
+    cX = []
+    cY = []
+    returned_list = []
+    temp_dis = inf
+    x = 0
+    y = 0
+    flag = True
+    for i in range(0,len(cluster_list)):
+        for j in range(i+1, len(cluster_list)):
+            
+            for m in cluster_list[i][1]:
+                if(m in used_tup):
+                    for n in cluster_list[j][1]:
+                        if(n in used_tup):
+                            flag = False
+            if(flag == True):               
+                c1, c2, min_dis = single_linkage(cluster_list[i][1], cluster_list[j][1])
+         
+           
+            if(temp_dis > min_dis):
+                temp_dis = min_dis
+                if(len(cX) !=0 and len(cY) != 0):
+                    cX.clear()
+                    cY.clear()
+                    cX.append(c1)
+                    cY.append(c2)
+                    x = i
+                    y = j
+                elif(len(cX) == 0 and len(cY) ==0):
+                    cX.append(c1)
+                    cY.append(c2)
+                    x = i
+                    y = j
+                
+    
+    returned_list.append(x)
+    returned_list.append(cX)
+    returned_list.append(y)
+    returned_list.append(cY)
+    returned_list.append(temp_dis)
+    print(returned_list)
+    return returned_list
+
+
+
+def create_dist_list(dataset):
+    distance_list=[]
+    sorted_by_second=[]
+    for i in range(0,len(dataset)):    
+        for j in range(i+1, len(dataset)):
+
+                temp_dis = find_distance(dataset[i], dataset[j])
+                distance_list.append([i,j,temp_dis,2]);
+ 
+    sorted_by_second = sorted(distance_list, key=lambda tup: tup[2])
+    
+    return sorted_by_second
+
+def create_Z_matrix(distance_list,dataset):
+#     Z = np.zeros((len(dataset) - 1, 4))
+    Z = ([])
+    print(len(distance_list))
+    for i in range(0,len(distance_list)):
+        
+            
+        if((distance_list[i][0] != distance_list[i][1])):
+            Z.append([distance_list[i][0],distance_list[i][1],distance_list[i][2],distance_list[i][3]])   
+            for j in range(i+1,len(distance_list)):
+                if(distance_list[j][0] == distance_list[i][0]):
+                    
+                    distance_list[j][0] = i + len(dataset) 
+                    
+                    if(distance_list[i][0] > len(dataset) and distance_list[i][1] > len(dataset)):
+                        distance_list[j][3] = distance_list[i][3] + distance_list[j][3]
+                    else:
+                        distance_list[j][3] = distance_list[i][3] + 1
+                        if((distance_list[i][0] == distance_list[i][1])):
+                            del distance_list[i]
+                    
+                    
+            for j in range(i+1,len(distance_list)):
+                if(distance_list[j][1] == distance_list[i][1]):
+                    
+                    distance_list[j][1] = i + len(dataset) 
+                    if(distance_list[i][0] > len(dataset) and distance_list[i][1] > len(dataset)):
+                        distance_list[j][3] = distance_list[i][3] + distance_list[j][3]
+                    else:
+                        distance_list[j][3] = distance_list[i][3] + 1
+                        if((distance_list[i][0] == distance_list[i][1])):
+                            del distance_list[i]
+                    
+               
+                    
+            for j in range(i+1,len(distance_list)):
+                if(distance_list[j][0] == distance_list[i][1]):
+                    distance_list[j][0] = i + len(dataset)
+                    if(distance_list[i][0] > len(dataset) and distance_list[i][1] > len(dataset)):
+                        distance_list[j][3] = distance_list[i][3] + distance_list[j][3]
+                    else:
+                        distance_list[j][3] = distance_list[i][3] + 1
+                        if((distance_list[i][0] == distance_list[i][1])):
+                            del distance_list[i]
+                    
+                 
+                        
+            for j in range(i+1,len(distance_list)):
+                if(distance_list[j][1] == distance_list[i][0]):
+                    distance_list[j][1] = i + len(dataset)
+                    if(distance_list[i][0] > len(dataset) and distance_list[i][1] > len(dataset)):
+                        distance_list[j][3] = distance_list[i][3] + distance_list[j][3]
+                    else:
+                        distance_list[j][3] = distance_list[i][3] + 1
+                        if((distance_list[i][0] == distance_list[i][1])):
+                            del distance_list[i]
+                    
+               
+
+            
+
+   
+
+    return Z
+        
+def hac(dataset):
+ #filter out empty values
+
+    return_list = []
+    distance_list = []
+    cluster_number = len(dataset)
+
+    distance_list = create_dist_list(dataset)
+   
+    Z = create_Z_matrix(distance_list,dataset)
+
+    returned_matrix = np.array(Z)
+
+    return returned_matrix
+
+def random_x_y(m):
+        return_val = []
+        for n in range(1,m):
+            x = random.randint(1,360)
+            y = random.randint(1,360)
+            tup = (x,y)
+            return_val.append(tup)
+        return return_val
+    
+def imshow_hac(dataset): 
+    Z = main()
+    fig = plt.figure(figsize=(25,10))
+    plt.axis([0,400,0,350])
+    for i in range(len(dataset)):
+        plt.scatter(dataset[i][0],dataset[i][1])
+#         plt.pause(0.1)
+
+    plt.show()
+
+def main():
+    data = load_data('pokemon.csv')
+    mt = []
+    for d in data:
+        (x,y) = calculate_x_y(d)
+        mt.append([x,y])
+    print(linkage(np.array(mt)))
+    
+
+    

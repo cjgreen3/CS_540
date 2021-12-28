@@ -1,0 +1,39 @@
+The qualified and diverse study panel responsible for “Artificial Intelligence and Life in 2030”
+could not foresee the unusual events that have occurred since 2016; these events have altered 
+the plans of almost everyone, as well as the path of AI. The report did a good job of reviewing
+AI’s progress in the years up to 2015; however, its future advances and challenges missed the
+mark in a few areas. An example of this is the Stanford article’s statement, “Autonomous vehicles
+will soon be commonplace.” The report references an article that inaccurately predicts self-driving
+cars to be widely adopted by 2020, with 10 million self-driving cars on the road (Greenough, 2016).
+Most of the article was more conservative which reduces unnecessary concerns of AI growing 
+out of control, yet necessary controls may not be timely implemented. Increasingly important 
+is NATO’s implementation of AI policies regarding global ethics, economy, and 
+security (Kasapoglu, Kirdemir, 2019). 
+
+With respect to transportation, the implementation of autonomous transportation has been slower 
+than the panel predicted. The report states this increase in autonomous vehicles would result in 
+city dwellers living further from work and own fewer cars due to ridesharing. The more conservative
+and general prediction that self-controlled delivery vehicles, flying vehicles, trucks, and 
+ridesharing vehicles “will likely be used” was more on target. The panel was not alone in making 
+these aggressive projections for self-driving vehicles. In 2016, car makers were also caught up
+in the AI hype, and many predicted to have driverless cars in mass production by 2020, Most have 
+changed their goals to simply “having” truly self-driving cars between 2020 and 2030 (Faggalla, 2016). 
+
+The article, “It’s 2020, Where Are Our Self-Driving Cars?” explains why the predictions in 2016 
+were off. Autonomous cars rely on collecting lots of data for all the possible situations when 
+driving. This process has proven to be more expensive and even more sophisticated than expected
+in 2016 (Piper, 2020). In addition, the COVID-19 pandemic in 2019 has been an unforeseen event 
+that caused a pause in rollouts and  purchases of new self-driving cars as many people have 
+transitioned to working at home(Boll, 2020). Furthermore, a few fatal accidents and lack of 
+demand for ridesharing during a pandemic has reduced the number of new self-driving cars 
+implemented. 
+
+Overall, wide use of autonomous vehicles will likely take several additional decades 
+(Gessner, 2020). The focus on the fight against COVID-19 has likely moved AI resources to other
+discussed applications of AI including health, robotics, and analytics. The article “Finding a
+role for AI in the pandemic” talks about how the sharing of code in predictive software isn’t
+as easy as copying the lines of C (Nat. Mach. Intell, 2020). Many industries have joined the 
+fight against COVID-19 and it takes time to refactor the code and make it reusable. With regards
+to transportation, when industries and people are willing to invest in self-driving vehicles and
+the technology is truly ready, the adaptation of autonomous vehicles may speed up as people look
+for ways travel safely, especially if travel restrictions continue.  

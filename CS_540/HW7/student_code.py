@@ -1,0 +1,142 @@
+# python imports
+import os
+from tqdm import tqdm
+
+# torch imports
+import torch
+import torch.nn as nn
+import torch.optim as optim
+
+# helper functions for computer vision
+import torchvision
+import torchvision.transforms as transforms
+
+
+class LeNet(nn.Module):
+    def __init__(self, input_shape=(32, 32), num_classes=100):
+        super(LeNet, self).__init__()
+        # certain definitions
+        self.conv1 = torch.nn.Conv2d(int_channel = 1, out_channels = 6,kernel_size = 5, stride = 1)
+        self.max_pool_1 = torch.nn.MaxPool2d(kernel_size = 2, stride = 2)
+
+        self.conv2 = torch.nn.Conv2d(int_channel = 6, out_channels = 16,kernel_size = 5, stride = 1)
+        self.max_pool_2 = torch.nn.MaxPool2d(kernel_size = 2, stride = 2)
+        self.Flatten = torch.nn.Flatten()
+        # review slides and replace with error size 
+        self.fc1 = torch.nn.Linear(16*5*5, 256)
+        self.fc2 = torch.nn.Linear(256, 128)
+        self.fc3 = torch.nn.Linear(128, num_classes)
+    def forward(self, x):
+        shape_dict = {}
+        # certain operations
+        x = torch.nn.functional.relu(self.conv1(x))
+        x = self.max_pool_1(x)
+        x = torch.nn.functional.relu(self.conv2(x))
+        x = self.max_pool_2(x)
+        y = torch.nn.Flatten(x)
+        y = torch.nn.functional.relu(self.fc1(y))
+        y = torch.nn.functional.relu(self.fc2(y))
+        y = torch.nn.functional.relu(self.fc3(y))
+
+
+
+        
+
+
+        return out, shape_dict
+
+
+def count_model_params():
+    '''
+    return the number of trainable parameters of LeNet.
+    '''
+    model = LeNet()
+    model_params = 0.0
+
+    return model_params
+
+
+class SimpleConvNet(nn.Module):
+    """
+    A simple convolutional neural network
+    """
+    def __init__(self, input_shape=(32, 32), num_classes=100):
+        super(SimpleConvNet, self).__init__()
+        ####################################################
+        # you can start from here and create a better model
+        ####################################################
+        layers = []
+        '''
+        append the layers here, for exmaple,
+            layers.append(nn.Conv2d(xxx))
+            layers.append(nn.ReLU(inplace=True))
+            layers.append(nn.MaxPool2d(xxx))
+        '''
+        layers.append(nn.Flatten())
+
+        self.layers = nn.Sequential(*layers)
+
+    def forward(self, x):
+        #################################
+        # Update the code here as needed
+        #################################
+        # the forward propagation
+        out = self.layers(x)
+        if self.training:
+            # softmax is merged into the loss during training
+            return out
+        else:
+            # attach softmax during inference
+            out = nn.functional.softmax(out, dim=1)
+            return out
+
+
+def train_model(model, train_loader, optimizer, criterion, epoch):
+    """
+    model (torch.nn.module): The model created to train
+    train_loader (pytorch data loader): Training data loader
+    optimizer (optimizer.*): A instance of some sort of optimizer, usually SGD
+    criterion (nn.CrossEntropyLoss) : Loss function used to train the network
+    epoch (int): Current epoch number
+    """
+    model.train()
+    train_loss = 0.0
+    for input, target in tqdm(train_loader, total=len(train_loader)):
+        ###################################
+        # fill in the standard training loop of forward pass,
+        # backward pass, loss computation and optimizer step
+        ###################################
+
+        # 1) zero the parameter gradients
+        optimizer.zero_grad()
+        # 2) forward + backward + optimize
+        output = model(input)
+        loss = criterion(output, target)
+        loss.backward()
+        optimizer.step()
+
+        # Update the train_loss variable
+        # .item() detaches the node from the computational graph
+        # Uncomment the below line after you fill block 1 and 2
+        train_loss += loss.item()
+
+    train_loss /= len(train_loader)
+    print('[Training set] Epoch: {:d}, Average loss: {:.4f}'.format(epoch+1, train_loss))
+
+    return train_loss
+
+
+def test_model(model, test_loader, epoch):
+    model.eval()
+    correct = 0
+    with torch.no_grad():
+        for input, target in test_loader:
+            output = model(input)
+            pred = output.max(1, keepdim=True)[1]
+            correct += pred.eq(target.view_as(pred)).sum().item()
+
+    test_acc = correct / len(test_loader.dataset)
+    print('[Test set] Epoch: {:d}, Accuracy: {:.2f}%\n'.format(
+        epoch+1, 100. * test_acc))
+
+    return test_acc

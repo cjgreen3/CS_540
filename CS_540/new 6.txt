@@ -1,0 +1,15 @@
+   if(not drop_phase):
+            offset = [0, -1, 1]
+            for i in range(5):
+                for j in range(5):
+                    if (state[i][j] == piece):
+                        deep_copy = copy.deepcopy(state)
+                        for i_offset in offset:
+                            for j_offset in offset:
+                                if((i+ i_offset >= 0 or i+ i_offset <= 4) 
+                                or (j + j_offset >= 0 or j + j_offset <= 4 )
+                                and state[i+ i_offset][j + j_offset] == ' '):
+                                    #tuple which stores the i,j coordinates
+                                    deep_copy[i+i_offset][j+j_offset] = piece
+                                    deep_copy = copy.deepcopy(state)
+                                    succ.append(deep_copy)
